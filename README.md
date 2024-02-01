@@ -1,6 +1,8 @@
 # Multimodal Unsupervised Domain Generalization (MUDG)
 -----------------------------------------------------
 
+![](https://github.com/Chris210634/mudg/blob/main/method.gif?raw=true)
+
 Code in this repo uses code from [multimodal prompt learning](https://github.com/muzairkhattak/multimodal-prompt-learning), which in turn uses code from [Co-CoOp and CoOp](https://github.com/KaiyangZhou/CoOp).
 
 ## ⏳ Installation
