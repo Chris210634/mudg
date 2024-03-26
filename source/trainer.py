@@ -436,7 +436,8 @@ def train_loop(args, model, ema_model, train_it,
                tokenizer=None,
                init_frozen_model=None,
                tokenized_text_with_descriptors=None,
-               epoch=0
+               epoch=0,
+               tokenized_text=None
                # This should be shape [N, C, T]
                # where N is  num of descriptors, C is n classes, T is token length
               ):
@@ -470,6 +471,24 @@ def train_loop(args, model, ema_model, train_it,
                 )
 
     model.train()
+    
+    #################################################################
+    #################################################################
+    #################################################################
+    teacher_model, _, _ = open_clip.create_model_and_transforms(
+            'ViT-L-14', 
+            pretrained='openai',
+            cache_dir=args.cache_dir
+        )
+    teacher_model.eval().cuda()
+    
+    with torch.no_grad(), torch.cuda.amp.autocast(enabled=True):
+        teacher_text_feature = F.normalize(
+            teacher_model.encode_text(tokenized_text.cuda()).float()
+        )
+    #################################################################
+    #################################################################
+    #################################################################
 
     for it in tqdm(range(args.iters_per_epoch)):
         if ema_val == 0.0 and it >= args.skip_ema_iters:
@@ -504,10 +523,21 @@ def train_loop(args, model, ema_model, train_it,
                     init_probs = (args.teacher_temp * (init_image_features @ init_text_feature.T)).softmax(1)
             else:
                 init_probs = (args.teacher_temp * (init_image_features @ init_text_feature.T)).softmax(1)
+                
+                
+                
+                
+        #################################################################
+        with torch.no_grad(), torch.cuda.amp.autocast(enabled=True):
+            teacher_image_features = teacher_model.encode_image(x)
+            teacher_image_features = F.normalize(teacher_image_features.float())
+        teacher_probs = (args.teacher_temp * (teacher_image_features @ teacher_text_feature.T)).softmax(1)
+        #################################################################
+                
         
         def closure():
             ''' Calculate forward pass and backward pass.'''
-            nonlocal x, init_probs, it
+            nonlocal x, init_probs, it, teacher_probs
             if args.loss != 'proda':
                 
 
@@ -577,7 +607,15 @@ def train_loop(args, model, ema_model, train_it,
 #                     )
                     assert args.adaptive_margin == 0.0
                     loss = my_cross_entropy(
-                        y_hat, y_onehot, margin=model.temp * args.margin) / args.accum_iter
+                        y_hat, teacher_probs, margin=model.temp * args.margin) / args.accum_iter
+        
+        
+#                     print(teacher_probs.max(1))
+        
+#                     assert False
+        
+        
+        
                 elif args.loss == 'batched':
                     assert args.adaptive_margin == 0.0
                     loss = my_cross_entropy(

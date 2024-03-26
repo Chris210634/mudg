@@ -241,7 +241,8 @@ for epoch in range(epochs):
             tokenizer=tokenizer,
             init_frozen_model=init_frozen_model,
             tokenized_text_with_descriptors=tokenized_text_with_descriptors,
-            epoch=epoch
+            epoch=epoch,
+            tokenized_text=text_base
         )
     #################################################################
 
