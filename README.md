@@ -245,9 +245,23 @@ python main_crossdataset.zs.py --seed 1 --eval_only 1 --gpt_centroid_eval 1 --gp
 python main_crossdataset.zs.py --seed 1 --eval_only 1 --gpt_centroid_eval 1 --gpt_score_averaging_eval 1 --modelname ViT-L-14 --pretrained openai --d 768
 ```
 
-
-
-
+## Soft logits
+--------------
+```bash
+for seed in 1 2 3;
+do
+    sh run_b16_soft.sh ImageNet     300 16 $seed
+    sh run_b16_soft.sh Caltech101   100 64 $seed
+    sh run_b16_soft.sh OxfordPets   200 64 $seed
+    sh run_b16_soft.sh StanfordCars 1000 16 $seed
+    sh run_b16_soft.sh Flowers102   200 64 $seed
+    sh run_b16_soft.sh Food101      100 64 $seed
+    sh run_b16_soft.sh FGVCAircraft 1000 64 $seed
+    sh run_b16_soft.sh SUN397       300 16 $seed
+    sh run_b16_soft.sh DTD          200 64 $seed
+    sh run_b16_soft.sh EuroSAT      200 64 $seed
+    sh run_b16_soft.sh UCF101       200 64 $seed
+```
 
 
 
