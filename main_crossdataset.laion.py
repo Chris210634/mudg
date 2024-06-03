@@ -39,7 +39,7 @@ parser.add_argument('--token_offset_eval', default = 0, type=int)
 parser.add_argument('--zs_average', default = 0, type=int)
 parser.add_argument('--rand_seed', default = 0, type=int)
 parser.add_argument('--tup_file', default='', type=str)
-parser.add_argument('--val_split', default=0.2, type=float)
+parser.add_argument('--val_split', default=0.01, type=float)
 
 args = parser.parse_args()
 print(args)
@@ -241,8 +241,7 @@ for epoch in range(epochs):
             tokenizer=tokenizer,
             init_frozen_model=init_frozen_model,
             tokenized_text_with_descriptors=tokenized_text_with_descriptors,
-            epoch=epoch,
-            tokenized_text=text_base
+            epoch=epoch
         )
     #################################################################
 
@@ -286,7 +285,7 @@ for epoch in range(epochs):
         dataset_list = [args.dataset]
         
     dataset_list = deepcopy(dataset_list)
-    dataset_list.append('validation')
+#     dataset_list.append('validation')
         
     tim_accum = 0.
     for dataset in dataset_list:

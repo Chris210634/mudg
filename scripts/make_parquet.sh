@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo TMP_DIR=${TMP_DIR}
-echo NUMBER_OF_PROCESSES=${NUMBER_OF_PROCESSES}
+echo NUMBER_OF_PROCESSES=${NUMBzER_OF_PROCESSES}
 
 for ((i=0; i<${NUMBER_OF_PROCESSES}; i++));
 do

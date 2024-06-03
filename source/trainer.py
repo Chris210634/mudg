@@ -30,6 +30,8 @@ from source.samplers import *
 from source.transforms import *
 from source.models import *
 
+import pytorch_metric_learning
+
 number_of_classes = {
     'ImageNet':1000,
     'Caltech101':100,
@@ -436,6 +438,253 @@ def train_loop(args, model, ema_model, train_it,
                tokenizer=None,
                init_frozen_model=None,
                tokenized_text_with_descriptors=None,
+               epoch=0
+               # This should be shape [N, C, T]
+               # where N is  num of descriptors, C is n classes, T is token length
+              ):
+    '''
+    if tokenized_text_rotation is not None, it must be a list of tensors of shape K x C,
+        where K is number of classes and C is context length (usually 77).
+        These are like the augmentations of the class prototypes.
+        We rotate through the augmentations.
+    '''
+    ema_val = args.ema
+    if args.skip_ema_iters > 0 and epoch==0 :
+        print('setting ema_val = 0.0 temporarily')
+        ema_val = 0.0
+    # ema is the helper for updaing EMA weights
+    ema = EMA(beta=ema_val)
+    
+    if not init_frozen_model is None: init_frozen_model.eval()
+    if args.init_lam > 0.0:
+        assert not init_frozen_model is None
+        if args.train_with_descriptors:
+            # populate the initial text feautres matrix
+            init_text_features = get_descriptor_features(
+                tokenized_text_with_descriptors,
+                model=init_frozen_model,
+                dim=args.d
+            )
+        else:
+            with torch.no_grad(), torch.cuda.amp.autocast(enabled=True):
+                init_text_feature = F.normalize(
+                    init_frozen_model.get_text_prototypes().float()
+                )
+
+    model.train()
+
+    for it in tqdm(range(args.iters_per_epoch)):
+        if ema_val == 0.0 and it >= args.skip_ema_iters:
+            ema_val = args.ema
+            ema = EMA(beta=ema_val)
+            print('restoring ema_val = {}'.format(ema_val))
+            ema_model = deepcopy(model)
+
+        x, y = next(train_it)
+            
+        x = x.cuda()
+        y = y.cuda()
+        
+        init_probs = None
+        
+        if args.train_with_descriptors:
+            # get frozen image features and predictions
+            desecriptor_index = it % len(tokenized_text_with_descriptors)
+            model.reset_text(tokenized_text_with_descriptors[desecriptor_index, :, :].cpu())
+                
+        if args.init_lam > 0.0 and args.loss == 'ce':
+            assert not init_frozen_model is None
+            with torch.no_grad(), torch.cuda.amp.autocast(enabled=True):
+                init_image_features = init_frozen_model.encode_image(x)
+                init_image_features = F.normalize(init_image_features.float())
+            if args.train_with_descriptors:
+#                 # get frozen image features and predictions
+#                 desecriptor_index = it % len(tokenized_text_with_descriptors)
+#                 model.reset_text(tokenized_text_with_descriptors[desecriptor_index, :, :].cpu())
+                init_text_feature = init_text_features[desecriptor_index, :, :]
+                with torch.no_grad():
+                    init_probs = (args.teacher_temp * (init_image_features @ init_text_feature.T)).softmax(1)
+            else:
+                init_probs = (args.teacher_temp * (init_image_features @ init_text_feature.T)).softmax(1)
+        
+        def closure():
+            ''' Calculate forward pass and backward pass.'''
+            nonlocal x, init_probs, it
+            if args.loss != 'proda':
+                
+
+                efficient_losses = ['clip', 'batched']
+                random_prototype_indices = None
+                if args.loss == 'batched':
+#                     assert False ### ### ###
+                    text_batchsize = 500
+                    # set random_prototype_indices to be 100 indices, uniformly picked, but must include the ys
+                    inds = y.unique()
+                    inds_pool = []
+                    for _i in range(n_classes):
+                        if not _i in inds:
+                            inds_pool.append(_i)
+                    random.shuffle(inds_pool)
+                    random_prototype_indices = torch.cat(
+                        (
+                            inds, torch.tensor(
+                                inds_pool[:(text_batchsize - len(inds))]
+                            ).cuda()
+                        )
+                    )
+                    assert len(random_prototype_indices.unique()) == text_batchsize
+                    
+                    assert init_probs is None 
+                    
+                    y_prime = torch.zeros_like(y)
+                    for __i, yi in enumerate(list(y)):
+                        y_prime[__i] = (random_prototype_indices == yi).nonzero().item()
+                    
+                    y_onehot = get_onehot(y_prime, text_batchsize, label_smoothing=args.label_smoothing)
+                
+                else:
+                    
+                    
+                    
+                    ###
+                    if len(y.shape) == 2:
+                        assert False  ### ### ###
+                        y_onehot = (args.teacher_temp * y).softmax(1)
+#                         print(y_onehot)
+                    else:
+                        y_onehot = get_onehot(y, n_classes, label_smoothing=args.label_smoothing)
+                    
+                    
+                    
+                    
+                    if not init_probs is None:
+                        y_onehot = (1. - args.init_lam) * y_onehot + args.init_lam * init_probs
+        
+                text_prototype_indices = y if args.loss == 'clip' else random_prototype_indices
+                f_image, y_hat, text_prototypes = model(
+                    x, return_features=True, 
+                    eval_text_features=True,
+                    return_text_prototypes=True,
+                    autocast=True,
+                    text_prototype_indices= text_prototype_indices if args.loss in efficient_losses else None
+                )
+                f_image = F.normalize(f_image.float())
+
+                #############################################################
+                ################## Main finetuning losses ###################
+                assert not (args.margin > 0.0 and args.adaptive_margin > 0.0)
+                if args.loss == 'ce':
+#                     y_hat = y_hat + model.temp * args.adaptive_margin * (
+#                         1.0 - text_prototypes.detach()[y] @ text_prototypes.detach().T
+#                     )
+                    assert args.adaptive_margin == 0.0
+                    loss = my_cross_entropy(
+                        y_hat, y_onehot, margin=model.temp * args.margin) / args.accum_iter
+                elif args.loss == 'supercon':
+                    loss_func = pytorch_metric_learning.losses.SupConLoss()
+                    supercon_loss = loss_func(f_image, y)
+                    ce_loss = my_cross_entropy(
+                        y_hat, y_onehot, margin=model.temp * args.margin)
+                    loss = args.supercon_lam * supercon_loss + ce_loss
+                    loss = loss / args.accum_iter
+        
+                elif args.loss == 'batched':
+                    assert args.adaptive_margin == 0.0
+                    loss = my_cross_entropy(
+                        y_hat, y_onehot, margin=model.temp * args.margin) / args.accum_iter
+                elif args.loss == 'clip':
+                    ## CLIP loss
+                    loss = multimodal_loss(
+                        f_image, text_prototypes,
+                        logit_scale=model.temp, 
+                        balance=1.0, 
+                        margin=args.margin,
+                        adaptive_margin=args.adaptive_margin
+                    ) / args.accum_iter
+                elif args.loss == 'kgcoop':
+                    loss = my_cross_entropy(
+                        y_hat, get_onehot(y, n_classes, label_smoothing=args.label_smoothing), 
+                        margin=0.0) / args.accum_iter
+                    loss_kg = 1.0 - (text_prototypes @ init_text_feature.T).mean()
+                    loss += args.init_lam * loss_kg / args.accum_iter
+                else:
+                    assert False
+            else:
+                assert args.loss == 'proda'
+                text_prototype_indices = y
+                n_prompt = 4
+                with torch.cuda.amp.autocast():
+                    f_image = model.encode_image(x)
+                f_image = F.normalize(f_image.float())
+                
+                text_prototypes = torch.zeros(
+                    (f_image.shape[0], n_prompt, f_image.shape[-1]), 
+                    device=f_image.device
+                )
+                
+                # make sure to define model.proda_descriptor_vectors
+                # it should have shape number_of_prompts x number_of_tokens_in_prompt x dim
+                assert len(model.proda_descriptor_vectors) % n_prompt == 0
+                __prompt_index_start = (it*n_prompt) % len(model.proda_descriptor_vectors)
+                for __prompt_index in range(n_prompt):
+                    model.shallow_prompt.reset_suffix_vectors(
+                        model.proda_descriptor_vectors[__prompt_index + __prompt_index_start, :, :].cpu()
+                    )
+                    text_prototypes[:, __prompt_index, :] = model.get_text_prototypes(
+                        autocast=True, 
+                        text_prototype_indices=text_prototype_indices,
+                    )
+                    
+                # memory efficient implementation of proDA loss
+                # using contrastive (CLIP) loss instead of CE loss
+                # text_prototypes: F.normalized text features
+                # shape: n_class x n_prompt x dim
+                loss = proda_loss(
+                    f_image, text_prototypes,
+                    logit_scale=model.temp,
+                    margin=args.margin
+                ) / args.accum_iter
+
+            scaler.scale(loss).backward()
+                
+        optimizer.zero_grad()
+        closure()
+        scaler.step(optimizer)
+        scaler.update()
+        optimizer.zero_grad()
+            
+        scheduler.step()
+        
+        if ema_val > 0.0:
+            ema.step_ema(ema_model, model)
+
+    if ema_val == 0.0:
+        ema_model = deepcopy(model)
+    # always test using the ema model !!!
+    return model, ema_model
+
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+
+def train_loop_soft (args, model, ema_model, train_it, 
+               n_classes, loss_list,
+               scaler, optimizer, scheduler,
+               tokenizer=None,
+               init_frozen_model=None,
+               tokenized_text_with_descriptors=None,
                epoch=0,
                tokenized_text=None
                # This should be shape [N, C, T]
@@ -681,173 +930,6 @@ def train_loop(args, model, ema_model, train_it,
         scaler.update()
         optimizer.zero_grad()
             
-        scheduler.step()
-        
-        if ema_val > 0.0:
-            ema.step_ema(ema_model, model)
-
-    if ema_val == 0.0:
-        ema_model = deepcopy(model)
-    # always test using the ema model !!!
-    return model, ema_model
-
-##############################################################################################
-##############################################################################################
-##############################################################################################
-##############################################################################################
-##############################################################################################
-##############################################################################################
-##############################################################################################
-##############################################################################################
-##############################################################################################
-##############################################################################################
-##############################################################################################
-##############################################################################################
-##############################################################################################
-##############################################################################################
-##############################################################################################
-
-def prograd_train_loop(args, model, ema_model, train_it, 
-               n_classes, loss_list,
-               scaler, optimizer, scheduler,
-               tokenizer=None,
-               init_frozen_model=None,
-               tokenized_text_with_descriptors=None,
-               epoch=0
-               # This should be shape [N, C, T]
-               # where N is  num of descriptors, C is n classes, T is token length
-              ):
-    '''
-    if tokenized_text_rotation is not None, it must be a list of tensors of shape K x C,
-        where K is number of classes and C is context length (usually 77).
-        These are like the augmentations of the class prototypes.
-        We rotate through the augmentations.
-    '''
-    ema_val = args.ema
-    if args.skip_ema_iters > 0 and epoch==0 :
-        print('setting ema_val = 0.0 temporarily')
-        ema_val = 0.0
-    # ema is the helper for updaing EMA weights
-    ema = EMA(beta=ema_val)
-    assert args.init_lam > 0.0
-#     if args.init_lam > 0.0:
-    assert not init_frozen_model is None
-    with torch.no_grad(), torch.cuda.amp.autocast(enabled=True):
-        init_text_feature = F.normalize(
-            init_frozen_model.get_text_prototypes().float()
-        )
-
-    model.train()
-
-    for it in tqdm(range(args.iters_per_epoch)):
-        if ema_val == 0.0 and it >= args.skip_ema_iters:
-            ema_val = args.ema
-            ema = EMA(beta=ema_val)
-            print('restoring ema_val = {}'.format(ema_val))
-            ema_model = deepcopy(model)
-
-        x, y = next(train_it)
-            
-        x = x.cuda()
-        y = y.cuda()
-        
-#         if args.init_lam > 0.0:
-        assert not init_frozen_model is None
-        with torch.no_grad(), torch.cuda.amp.autocast(enabled=True):
-            init_image_features = init_frozen_model.encode_image(x)
-            init_image_features = F.normalize(init_image_features.float())
-#             init_scores = init_frozen_model.temp * (init_image_features @ init_text_feature.T)
-        
-        optimizer.zero_grad()
-        
-        ### Begin closure
-        y_onehot = get_onehot(y, n_classes, label_smoothing=args.label_smoothing)
-
-        efficient_losses = ['clip', 'batched']
-        if args.loss == 'batched':
-            # set random_prototype_indices to be 100 indices, uniformly picked, but must include the ys
-            inds = y.unique()
-            inds_pool = []
-            for _i in range(n_classes):
-                if not _i in inds:
-                    inds_pool.append(_i)
-            random.shuffle(inds_pool)
-            random_prototype_indices = torch.cat((torch.tensor(inds_pool[:(1000 - len(inds))]), inds))
-            assert len(random_prototype_indices.unique()) == 1000
-                
-        text_prototype_indices = y if args.loss == 'clip' else random_prototype_indices
-        f_image, y_hat, text_prototypes = model(
-            x, return_features=True, 
-            eval_text_features=True,
-            return_text_prototypes=True,
-            autocast=False,
-            text_prototype_indices= text_prototype_indices if args.loss in efficient_losses else None
-        )
-
-        f_image = F.normalize(f_image.float())
-
-        assert not (args.margin > 0.0 and args.adaptive_margin > 0.0)
-        if args.loss == 'ce':
-            y_hat = y_hat + model.temp * args.adaptive_margin * (
-                1.0 - text_prototypes.detach()[y] @ text_prototypes.detach().T
-            )
-            ce_loss = my_cross_entropy(
-                y_hat, y_onehot, margin=model.temp * args.margin) / args.accum_iter
-        elif args.loss == 'clip':
-            ## CLIP loss
-            ce_loss = multimodal_loss(
-                f_image, text_prototypes,
-                logit_scale=model.temp, 
-                balance=1.0, 
-                margin=args.margin,
-                adaptive_margin=args.adaptive_margin
-            ) / args.accum_iter
-        elif args.loss == 'batched':
-            pass
-        else:
-            assert False
-            
-        assert args.loss == 'clip'
-        with torch.no_grad():
-            init_probs = (
-                model.temp * (
-                    init_image_features @ init_text_feature[y].T
-                )
-            ).softmax(dim=-1)
-            init_probs = init_probs.float()
-        kl_loss = (
-            -init_probs * (y_hat.softmax(dim=-1) / (init_probs + 1e-8)).log()
-        ).sum(1).mean()
-        ### end closure
-                
-        optimizer.zero_grad()
-        
-        # backward ce loss and save grads
-        kl_loss.backward(retain_graph=True)
-        kl_grads = []
-        for param_group in optimizer.param_groups:
-            for p in param_group['params']:
-                kl_grads.append(p.grad.clone())
-                
-        # optimizer don't step
-        optimizer.zero_grad()
-        
-        # backward kl loss and save grads
-        ce_loss.backward()
-        for param_group in optimizer.param_groups:
-            for p, kl_grad in zip(param_group['params'], kl_grads):
-                # calculate cosine distance
-                kl_grad_norm = kl_grad / torch.linalg.norm(kl_grad)
-                ce_grad = p.grad.clone()
-                ce_grad_norm = ce_grad / torch.linalg.norm(ce_grad)
-
-                if torch.dot(kl_grad_norm.flatten(), ce_grad_norm.flatten()) < 0:
-                    p.grad = ce_grad - args.init_lam * torch.dot(
-                        ce_grad.flatten(), kl_grad_norm.flatten()
-                    ) * kl_grad_norm
-        
-        optimizer.step()
-        optimizer.zero_grad()
         scheduler.step()
         
         if ema_val > 0.0:

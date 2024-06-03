@@ -61,12 +61,13 @@ def get_arg_parser():
     parser.add_argument('--train_with_descriptors', default = 0, type=int)
     parser.add_argument('--teacher_temp', default = 100.0, type=float)
     parser.add_argument('--init_lam', default = 0.0, type=float)
+    parser.add_argument('--supercon_lam', default = 1.0, type=float)
     parser.add_argument('--skip_ema_iters', default = 0, type=int)
     
     ### ### ### for nearest neighbor search
     # number of processes for parallelization
     parser.add_argument('--proc_id', default = -1, type=int)
-    parser.add_argument('--nproc', default = 8, type=int)
+    parser.add_argument('--nproc', default = 1, type=int)
     
     # number of waffle augmentations for retrieval 
     parser.add_argument('--n_waffle', default = 8, type=int)
@@ -78,7 +79,7 @@ def get_arg_parser():
     parser.add_argument('--tmp_directory', default = 'cache/', type=str)
     
     # parent folder of laion-2B-en containing the parquets and indices.
-    parser.add_argument('--index_directory', default = 'laion/', type=str)
+    parser.add_argument('--index_directory', default = '/projectnb/textconv/cliao25/LLAVA/clip-training/', type=str)
     
     # waffle augmentations stored in this file
     parser.add_argument('--descriptor_file', default = 'cache/waffle_descriptors_512_count.list', type=str)
@@ -88,6 +89,12 @@ def get_arg_parser():
     
     # number of K-means clusters in postprocessing step
     parser.add_argument('--n_clusters', default = 48, type=int)
+   
+    # for scripts/retrieve.py
+    # set to parquet_lengths_paired.list for kmeans paired results
+    parser.add_argument('--parquet_lengths_filename', default = 'parquet_lengths.list', type=str)
+    
+    parser.add_argument('--nprobe', default = 8, type=int)
     return parser
 
 

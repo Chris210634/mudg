@@ -37,7 +37,7 @@ def get_laion_dataset(train_xform, tup_file='result_tup_list', val_split=0, val_
         labels = torch.tensor([i[1] for i in imgs])
         n_classes = labels.max().item() + 1
         val_indices = []
-        for i in range(n_classes):
+        for i in range(int(n_classes)):
             indices = (labels == i).nonzero().view(-1)
             n_val = int(len(indices) * val_split)
             val_indices.append(indices[torch.randperm(len(indices))[:n_val]])
@@ -209,7 +209,12 @@ class BaseDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         def img_load(index):
-            imraw = PIL.Image.open(self.imgs[index][0])
+            try:
+                imraw = PIL.Image.open(self.imgs[index][0])
+            except PIL.UnidentifiedImageError:
+                width, height = 400, 300
+                white_image = PIL.Image.new("RGB", (width, height), color="white")
+                imraw = white_image
             # convert gray to rgb
             try:
                 if len(list(imraw.split())) == 1 : imraw = imraw.convert('RGB')
@@ -221,7 +226,7 @@ class BaseDataset(torch.utils.data.Dataset):
             return im
 
         im = img_load(index)
-        target = self.imgs[index][1]
+        target = int(self.imgs[index][1])
         
         if self.metadata is None:
             return im, target

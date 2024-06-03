@@ -8,7 +8,7 @@ if [ ! -d "$directory" ]; then
 else
     echo "imagenet exists."
 fi
-
+rm -f /scratch/cliao25/imagenet_subset.zip
 
 
 directory="/scratch/cliao25/stanford_cars"
@@ -19,7 +19,7 @@ if [ ! -d "$directory" ]; then
 else
     echo "stanford_cars exists."
 fi
-
+rm -f /scratch/cliao25/stanford_cars.zip
 
 
 directory="/scratch/cliao25/caltech-101"
@@ -29,8 +29,8 @@ if [ ! -d "$directory" ]; then
     unzip -DD -q  /scratch/cliao25/caltech-101.zip -d  /scratch/cliao25/
 else
     echo "caltech-101 exists."
-fi
-
+fi 
+rm -f /scratch/cliao25/caltech-101.zip
 
 
 directory="/scratch/cliao25/dtd"
@@ -41,7 +41,7 @@ if [ ! -d "$directory" ]; then
 else
     echo "dtd exists."
 fi
-
+rm -f /scratch/cliao25/dtd.zip
 
 
 directory="/scratch/cliao25/eurosat"
@@ -52,7 +52,7 @@ if [ ! -d "$directory" ]; then
 else
     echo "eurosat exists."
 fi
-
+rm -f /scratch/cliao25/eurosat.zip
 
 
 directory="/scratch/cliao25/fgvc_aircraft"
@@ -63,7 +63,7 @@ if [ ! -d "$directory" ]; then
 else
     echo "fgvc_aircraft exists."
 fi
-
+rm -f /scratch/cliao25/fgvc_aircraft.zip
 
 
 directory="/scratch/cliao25/food-101"
@@ -74,7 +74,7 @@ if [ ! -d "$directory" ]; then
 else
     echo "food-101 exists."
 fi
-
+rm -f /scratch/cliao25/food-101.zip
 
 
 directory="/scratch/cliao25/oxford_flowers"
@@ -85,7 +85,7 @@ if [ ! -d "$directory" ]; then
 else
     echo "oxford_flowers exists."
 fi
-
+rm -f /scratch/cliao25/oxford_flowers.zip
 
 
 directory="/scratch/cliao25/oxford_pets"
@@ -96,7 +96,7 @@ if [ ! -d "$directory" ]; then
 else
     echo "oxford_pets exists."
 fi
-
+rm -f /scratch/cliao25/oxford_pets.zip
 
 
 directory="/scratch/cliao25/sun397"
@@ -107,7 +107,7 @@ if [ ! -d "$directory" ]; then
 else
     echo "sun397 exists."
 fi
-
+rm -f /scratch/cliao25/sun397.zip
 
 
 directory="/scratch/cliao25/ucf101"
@@ -118,60 +118,66 @@ if [ ! -d "$directory" ]; then
 else
     echo "ucf101 exists."
 fi
+rm -f /scratch/cliao25/ucf101.zip
 
-# directory="/scratch/cliao25/imagenet-sketch"
-# if [ ! -d "$directory" ]; then
-#     echo "copying imagenet-sketch to scratch."
-#     cp ~/cliao25/data/imagenet-sketch.zip /scratch/cliao25
-#     unzip -DD -q  /scratch/cliao25/imagenet-sketch.zip -d  /scratch/cliao25/
-# else
-#     echo "imagenet-sketch exists."
-# fi
+directory="/scratch/cliao25/imagenet-sketch"
+if [ ! -d "$directory" ]; then
+    echo "copying imagenet-sketch to scratch."
+    cp ~/cliao25/data/imagenet-sketch.zip /scratch/cliao25
+    unzip -DD -q  /scratch/cliao25/imagenet-sketch.zip -d  /scratch/cliao25/
+else
+    echo "imagenet-sketch exists."
+fi
+rm -f scratch/cliao25/imagenet-sketch.zip
 
-# directory="/scratch/cliao25/imagenet-adversarial"
-# if [ ! -d "$directory" ]; then
-#     echo "copying imagenet-adversarial to scratch."
-#     cp ~/cliao25/data/imagenet-adversarial.zip /scratch/cliao25
-#     unzip -DD -q  /scratch/cliao25/imagenet-adversarial.zip -d  /scratch/cliao25/
-# else
-#     echo "imagenet-adversarial exists."
-# fi
+directory="/scratch/cliao25/imagenet-adversarial"
+if [ ! -d "$directory" ]; then
+    echo "copying imagenet-adversarial to scratch."
+    cp ~/cliao25/data/imagenet-adversarial.zip /scratch/cliao25
+    unzip -DD -q  /scratch/cliao25/imagenet-adversarial.zip -d  /scratch/cliao25/
+else
+    echo "imagenet-adversarial exists."
+fi
+rm -f /scratch/cliao25/imagenet-adversarial.zip
 
-# directory="/scratch/cliao25/imagenet-rendition"
-# if [ ! -d "$directory" ]; then
-#     echo "copying imagenet-rendition to scratch."
-#     cp ~/cliao25/data/imagenet-rendition.zip /scratch/cliao25
-#     unzip -DD -q  /scratch/cliao25/imagenet-rendition.zip -d  /scratch/cliao25/
-# else
-#     echo "imagenet-rendition exists."
-# fi
+directory="/scratch/cliao25/imagenet-rendition"
+if [ ! -d "$directory" ]; then
+    echo "copying imagenet-rendition to scratch."
+    cp ~/cliao25/data/imagenet-rendition.zip /scratch/cliao25
+    unzip -DD -q  /scratch/cliao25/imagenet-rendition.zip -d  /scratch/cliao25/
+else
+    echo "imagenet-rendition exists."
+fi
+rm -f /scratch/cliao25/imagenet-rendition.zip
 
-# directory="/scratch/cliao25/imagenetv2"
-# if [ ! -d "$directory" ]; then
-#     echo "copying imagenetv2 to scratch."
-#     cp ~/cliao25/data/imagenetv2.zip /scratch/cliao25
-#     unzip -DD -q  /scratch/cliao25/imagenetv2.zip -d  /scratch/cliao25/
-# else
-#     echo "imagenetv2 exists."
-# fi
+directory="/scratch/cliao25/imagenetv2"
+if [ ! -d "$directory" ]; then
+    echo "copying imagenetv2 to scratch."
+    cp ~/cliao25/data/imagenetv2.zip /scratch/cliao25
+    unzip -DD -q  /scratch/cliao25/imagenetv2.zip -d  /scratch/cliao25/
+else
+    echo "imagenetv2 exists."
+fi
+rm -f /scratch/cliao25/imagenetv2.zip
 
-# directory="/scratch/cliao25/terra_incognita"
-# if [ ! -d "$directory" ]; then
-#     echo "copying terra_incognita to scratch."
-#     cp ~/cliao25/data/terra_incognita.zip /scratch/cliao25
-#     unzip -DD -q  /scratch/cliao25/terra_incognita.zip -d  /scratch/cliao25/
-# else
-#     echo "terra_incognita exists."
-# fi
+directory="/scratch/cliao25/terra_incognita"
+if [ ! -d "$directory" ]; then
+    echo "copying terra_incognita to scratch."
+    cp ~/cliao25/data/terra_incognita.zip /scratch/cliao25
+    unzip -DD -q  /scratch/cliao25/terra_incognita.zip -d  /scratch/cliao25/
+else
+    echo "terra_incognita exists."
+fi
 
-# directory="/scratch/cliao25/office_home"
-# if [ ! -d "$directory" ]; then
-#     echo "copying office_home to scratch."
-#     cp ~/cliao25/data/office_home.zip /scratch/cliao25
-#     unzip -DD -q  /scratch/cliao25/office_home.zip -d  /scratch/cliao25/
-# else
-#     echo "office_home exists."
-# fi
+directory="/scratch/cliao25/office_home"
+if [ ! -d "$directory" ]; then
+    echo "copying office_home to scratch."
+    cp ~/cliao25/data/office_home.zip /scratch/cliao25
+    unzip -DD -q  /scratch/cliao25/office_home.zip -d  /scratch/cliao25/
+else
+    echo "office_home exists."
+fi
+rm -f /scratch/cliao25/office_home.zip
 
 # directory="/scratch/cliao25/domain_net"
 # if [ ! -d "$directory" ]; then
@@ -182,33 +188,33 @@ fi
 #     echo "domain_net exists."
 # fi
 
-# directory="/scratch/cliao25/VLCS"
-# if [ ! -d "$directory" ]; then
-#     echo "copying VLCS to scratch."
-#     cp ~/cliao25/data/VLCS.zip /scratch/cliao25
-#     unzip -DD -q  /scratch/cliao25/VLCS.zip -d  /scratch/cliao25/
-# else
-#     echo "VLCS exists."
-# fi
+directory="/scratch/cliao25/VLCS"
+if [ ! -d "$directory" ]; then
+    echo "copying VLCS to scratch."
+    cp ~/cliao25/data/VLCS.zip /scratch/cliao25
+    unzip -DD -q  /scratch/cliao25/VLCS.zip -d  /scratch/cliao25/
+else
+    echo "VLCS exists."
+fi
 
-# directory="/scratch/cliao25/PACS"
-# if [ ! -d "$directory" ]; then
-#     echo "copying PACS to scratch."
-#     cp ~/cliao25/data/PACS.zip /scratch/cliao25
-#     unzip -DD -q  /scratch/cliao25/PACS.zip -d  /scratch/cliao25/
-# else
-#     echo "PACS exists."
-# fi
+directory="/scratch/cliao25/PACS"
+if [ ! -d "$directory" ]; then
+    echo "copying PACS to scratch."
+    cp ~/cliao25/data/PACS.zip /scratch/cliao25
+    unzip -DD -q  /scratch/cliao25/PACS.zip -d  /scratch/cliao25/
+else
+    echo "PACS exists."
+fi
 
-# directory="/scratch/cliao25/imagenet21k_resized"
-# if [ ! -d "$directory" ]; then
-#     echo "copying imagenet21k_resized to scratch."
-#     cp ~/cliao25/data/imagenet21k_resized.zip /scratch/cliao25
-#     unzip -DD -q  /scratch/cliao25/imagenet21k_resized.zip -d  /scratch/cliao25/
-# else
-#     echo "imagenet21k_resized exists."
-# fi
+# # directory="/scratch/cliao25/imagenet21k_resized"
+# # if [ ! -d "$directory" ]; then
+# #     echo "copying imagenet21k_resized to scratch."
+# #     cp ~/cliao25/data/imagenet21k_resized.zip /scratch/cliao25
+# #     unzip -DD -q  /scratch/cliao25/imagenet21k_resized.zip -d  /scratch/cliao25/
+# # else
+# #     echo "imagenet21k_resized exists."
+# # fi
 
 
-
+# 
 find /scratch/cliao25 -type f -exec touch {} +
