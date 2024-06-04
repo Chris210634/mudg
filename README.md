@@ -121,6 +121,55 @@ laion
 
 ```
 
+## ✨ NEW: Paired k-means Index Training
+---------------------------------------------
+
+To build LAION indices using the paired k-means training presented in the paper, please follow instructions at [https://github.com/Chris210634/laion-index](https://github.com/Chris210634/laion-index).
+
+This requires a substantial amount of memory and disk space. The instructions here will produce an index split into 58 shards in the format `knn.paired_QT_4bit.index*`. Please copy these into `laion/laion-2B-en`. The resulting directory structure should look like:
+
+```
+laion
+├── laion-2B-en
+│   ├── 0000.parquet
+... ... ...
+│   ├── 2313.parquet
+│   ├── knn.paired_QT_4bit.index00
+... ... ...
+│   ├── knn.paired_QT_4bit.index57
+├── parquet_lengths_paired.list
+
+```
+
+Just remember to use the `parquet_lengths_paired.list` list in the retrieval step. 
+
+
+## ✨ NEW: Adaptive Label Text Augmentations
+---------------------------------------------
+
+To run the adaptive label augmentation presented in the paper:
+
+```bash
+for dataset in ImageNet Caltech101 OxfordPets StanfordCars Flowers102 Food101 FGVCAircraft SUN397 DTD EuroSAT UCF101 ImageNetV2 ImageNetSketch ImageNetA ImageNetR DomainNet.clipart OfficeHome.real PACS.art VLCS.caltech TerraInc.100; do
+    python better_augmentations_zero-shot.py --dataset $dataset --modelname ViT-L-14 --pretrained openai --d 768
+    python better_augmentations_zero-shot.py --dataset $dataset --modelname ViT-B-16 --pretrained openai --d 512
+done
+cp cache/better_descriptors_sorted_ViT-B-16_DomainNet.clipart.list cache/better_descriptors_sorted_ViT-B-16_DomainNet.list
+cp cache/better_descriptors_sorted_ViT-B-16_OfficeHome.real.list   cache/better_descriptors_sorted_ViT-B-16_16_OfficeHome.list
+cp cache/better_descriptors_sorted_ViT-B-16_PACS.art.list          cache/better_descriptors_sorted_ViT-B-16_PACS.list
+cp cache/better_descriptors_sorted_ViT-B-16_VLCS.caltech.list      cache/better_descriptors_sorted_ViT-B-16_VLCS.list
+cp cache/better_descriptors_sorted_ViT-B-16_TerraInc.100.list      cache/better_descriptors_sorted_ViT-B-16_TerraInc.list
+cp cache/better_descriptors_sorted_ViT-L-14_DomainNet.clipart.list cache/better_descriptors_sorted_ViT-L-14_DomainNet.list
+cp cache/better_descriptors_sorted_ViT-L-14_OfficeHome.real.list   cache/better_descriptors_sorted_ViT-L-14_OfficeHome.list
+cp cache/better_descriptors_sorted_ViT-L-14_PACS.art.list          cache/better_descriptors_sorted_ViT-L-14_PACS.list
+cp cache/better_descriptors_sorted_ViT-L-14_VLCS.caltech.list      cache/better_descriptors_sorted_ViT-L-14_VLCS.list
+cp cache/better_descriptors_sorted_ViT-L-14_TerraInc.100.list      cache/better_descriptors_sorted_ViT-L-14_TerraInc.list
+```
+
+The selected augmentations are stored in `cache/better_descriptors_sorted_*.list`.
+
+To train with the selected augmentations, run `run_b16_initreg_paired.sh` and `run_l14_initreg_paired.sh` using the same settings as above (`run_b16.sh` and `run_l14.sh`).
+
 
 ## 🧪 Run Experiments
 ---------------------------
@@ -128,29 +177,35 @@ laion
 (1) Retrieve training samples for each dataset. 
 
 ```bash
-sh run_retrieve.sh ImageNet   16 64 96
-sh run_retrieve.sh Caltech101 64 64 384
-sh run_retrieve.sh OxfordPets 64 64 384
-sh run_retrieve.sh StanfordCars 16 64 96
-sh run_retrieve.sh Flowers102 64 64 384
-sh run_retrieve.sh Food101    64 64 384
-sh run_retrieve.sh FGVCAircraft 64 64 384
-sh run_retrieve.sh SUN397     16 64 96
-sh run_retrieve.sh DTD        64 64 384
-sh run_retrieve.sh EuroSAT    64 64 384
-sh run_retrieve.sh UCF101     64 64 384
-sh run_retrieve.sh ImageNetV2 16 64 96
-sh run_retrieve.sh ImageNetSketch 16 64 96
-sh run_retrieve.sh ImageNetA 16 64 96
-sh run_retrieve.sh ImageNetR 16 64 96
-sh run_retrieve.sh DomainNet 16 64 96
-sh run_retrieve.sh OfficeHome 64 64 384
-sh run_retrieve.sh PACS      64 64 384
-sh run_retrieve.sh VLCS      64 64 384
-sh run_retrieve.sh TerraInc  64 64 384
+sh run_retrieve.sh ImageNet     16 64 96 cache parquet_lengths.list 8 cache
+sh run_retrieve.sh Caltech101   64 64 384 cache parquet_lengths.list 8 cache
+sh run_retrieve.sh OxfordPets   64 64 384 cache parquet_lengths.list 8 cache
+sh run_retrieve.sh StanfordCars 16 64 96 cache parquet_lengths.list 8 cache
+sh run_retrieve.sh Flowers102   64 64 384 cache parquet_lengths.list 8 cache
+sh run_retrieve.sh Food101      64 64 384 cache parquet_lengths.list 8 cache
+sh run_retrieve.sh FGVCAircraft 64 64 384 cache parquet_lengths.list 8 cache
+sh run_retrieve.sh SUN397       16 64 96 cache parquet_lengths.list 8 cache
+sh run_retrieve.sh DTD          64 64 384 cache parquet_lengths.list 8 cache
+sh run_retrieve.sh EuroSAT      64 64 384 cache parquet_lengths.list 8 cache
+sh run_retrieve.sh UCF101       64 64 384 cache parquet_lengths.list 8 cache
+sh run_retrieve.sh ImageNetV2   16 64 96 cache parquet_lengths.list 8 cache
+sh run_retrieve.sh ImageNetSketch 16 64 96 cache parquet_lengths.list 8 cache
+sh run_retrieve.sh ImageNetA    16 64 96 cache parquet_lengths.list 8 cache
+sh run_retrieve.sh ImageNetR    16 64 96 cache parquet_lengths.list 8 cache
+sh run_retrieve.sh DomainNet    16 64 96 cache parquet_lengths.list 8 cache
+sh run_retrieve.sh OfficeHome   64 64 384 cache parquet_lengths.list 8 cache
+sh run_retrieve.sh PACS         64 64 384 cache parquet_lengths.list 8 cache
+sh run_retrieve.sh VLCS         64 64 384 cache parquet_lengths.list 8 cache
+sh run_retrieve.sh TerraInc     64 64 384 cache parquet_lengths.list 8 cache
 ```
 
-The format is: `bash sh run_retrieve.sh $dataset $m $n $k`.
+The format is: `bash sh run_retrieve.sh $dataset $m $n $k cache parquet_lengths.list $nprobe cache`.
+
+The first cache can be a different temporary directory if you're worried about disk space. If you're using the paired k-means indices instead of the LAION indices downloaded from their server, use `parquet_lengths_paired.list` instead of `parquet_lengths.list`.
+
+```bash 
+sh run_retrieve.sh $dataset $m $n $k cache_paired parquet_lengths_paired.list $nprobe cache_paired
+```
 
 The above script queries the index and parquet files, downloads the images and makes a list of training image filenames with pseudo-labels. These files are stored in `cache`. For example, the retrieved aircraft dataset file structure looks like:
 
@@ -244,10 +299,6 @@ python main_crossdataset.zs.py --seed 1 --eval_only 1 --openai_eval 1 --modelnam
 python main_crossdataset.zs.py --seed 1 --eval_only 1 --gpt_centroid_eval 1 --gpt_score_averaging_eval 1 --modelname ViT-B-16 --pretrained openai --d 512
 python main_crossdataset.zs.py --seed 1 --eval_only 1 --gpt_centroid_eval 1 --gpt_score_averaging_eval 1 --modelname ViT-L-14 --pretrained openai --d 768
 ```
-
-
-
-
 
 
 
