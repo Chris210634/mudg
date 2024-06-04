@@ -178,6 +178,8 @@ sh run_retrieve.sh TerraInc     64 64 384 cache parquet_lengths.list 8 cache
 
 The format is: `bash sh run_retrieve.sh $dataset $m $n $k cache parquet_lengths.list $nprobe cache`.
 
+The first cache can be a different temporary directory if you're worried about disk space. If you're using the paired k-means indices instead of the LAION indices downloaded from their server, use `parquet_lengths_paired.list` instead of `parquet_lengths.list`.
+
 The above script queries the index and parquet files, downloads the images and makes a list of training image filenames with pseudo-labels. These files are stored in `cache`. For example, the retrieved aircraft dataset file structure looks like:
 
 ```
