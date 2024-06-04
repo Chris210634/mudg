@@ -1,7 +1,7 @@
 # Multimodal Unsupervised Domain Generalization (MUDG)
 -----------------------------------------------------
 
-![](https://github.com/Chris210634/mudg/blob/main/method.gif?raw=true)
+![](https://github.com/Chris210634/mudg/blob/main/laion/method.gif?raw=true)
 
 Code in this repo uses code from [multimodal prompt learning](https://github.com/muzairkhattak/multimodal-prompt-learning), which in turn uses code from [Co-CoOp and CoOp](https://github.com/KaiyangZhou/CoOp).
 
@@ -124,6 +124,8 @@ laion
 ## ✨ NEW: Paired k-means Index Training
 ---------------------------------------------
 
+![](https://github.com/Chris210634/mudg/blob/main/laion/paired_kmeans.png?raw=true)
+
 To build LAION indices using the paired k-means training presented in the paper, please follow instructions at [https://github.com/Chris210634/laion-index](https://github.com/Chris210634/laion-index).
 
 This requires a substantial amount of memory and disk space. The instructions here will produce an index split into 58 shards in the format `knn.paired_QT_4bit.index*`. Please copy these into `laion/laion-2B-en`. The resulting directory structure should look like:
@@ -146,6 +148,8 @@ Just remember to use the `parquet_lengths_paired.list` list in the retrieval ste
 
 ## ✨ NEW: Adaptive Label Text Augmentations
 ---------------------------------------------
+
+![](https://github.com/Chris210634/mudg/blob/main/laion/adaptive_text_augmentation.png?raw=true)
 
 To run the adaptive label augmentation presented in the paper:
 
