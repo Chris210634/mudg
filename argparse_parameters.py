@@ -88,6 +88,12 @@ def get_arg_parser():
     
     # number of K-means clusters in postprocessing step
     parser.add_argument('--n_clusters', default = 48, type=int)
+    
+    # for scripts/retrieve.py
+    # set to parquet_lengths_paired.list for kmeans paired results
+    parser.add_argument('--parquet_lengths_filename', default = 'parquet_lengths.list', type=str)
+
+    parser.add_argument('--nprobe', default = 8, type=int)
     return parser
 
 

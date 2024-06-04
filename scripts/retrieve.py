@@ -47,7 +47,7 @@ def _get(distances, indices, n_nn):
         # inds is index into parquet table
     return sim_matrix, index_matrix
 
-file_paths, lengths, index_list = torch.load(pwd + 'parquet_lengths.list')
+file_paths, lengths, index_list = torch.load(pwd + args.parquet_lengths_filename)
 ###   file_paths: 
 #     ['0000.parquet',
 #      '0001.parquet',
@@ -76,10 +76,22 @@ f = torch.cat(f[start:end]).cpu().numpy()
 # torch.Size([n_classes*n_tasks, feature_dim])
 
 print('Shape of search feature: ', f.shape)
+faiss.omp_set_num_threads(8)
+torch.set_num_threads(8)
 
 for index_fn in tqdm(index_list):
     index = faiss.read_index(pwd + index_fn)
+    
+    faiss.extract_index_ivf(index).nprobe = args.nprobe
+    assert faiss.extract_index_ivf(index).nprobe == args.nprobe
+    
+#     res = faiss.StandardGpuResources()
+#     co = faiss.GpuClonerOptions()
+#     co.useFloat16 = True
+#     index = faiss.index_cpu_to_gpu(res, 0, index, co)
+
     distances, indices = index.search(f, NUM_NEAREST_NEIGHBORS)
+    del index
     retrieval_results.append((distances, indices))
     
 distances = torch.cat([torch.tensor(lli[0]) for lli in retrieval_results], dim=1)
