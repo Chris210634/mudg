@@ -121,6 +121,29 @@ laion
 
 ```
 
+## ✨ NEW: Paired k-means Index Training
+---------------------------------------------
+
+To build LAION indices using the paired k-means training presented in the paper, please follow instructions at [https://github.com/Chris210634/laion-index](https://github.com/Chris210634/laion-index).
+
+This requires a substantial amount of memory and disk space. The instructions here will produce an index split into 58 shards in the format `knn.paired_QT_4bit.index*`. Please copy these into `laion/laion-2B-en`. The resulting directory structure should look like:
+
+```
+laion
+├── laion-2B-en
+│   ├── 0000.parquet
+... ... ...
+│   ├── 2313.parquet
+│   ├── knn.paired_QT_4bit.index00
+... ... ...
+│   ├── knn.paired_QT_4bit.index57
+├── parquet_lengths_paired.list
+
+```
+
+Just remember to use the `parquet_lengths_paired.list` list in the retrieval step. 
+
+
 ## ✨ NEW: Adaptive Label Text Augmentations
 ---------------------------------------------
 
