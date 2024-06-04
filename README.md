@@ -245,6 +245,31 @@ python main_crossdataset.zs.py --seed 1 --eval_only 1 --gpt_centroid_eval 1 --gp
 python main_crossdataset.zs.py --seed 1 --eval_only 1 --gpt_centroid_eval 1 --gpt_score_averaging_eval 1 --modelname ViT-L-14 --pretrained openai --d 768
 ```
 
+## ✨ NEW: Adaptive Label Text Augmentations
+---------------------------------------------
+
+To run the adaptive label augmentation presented in the paper:
+
+```bash
+for dataset in ImageNet Caltech101 OxfordPets StanfordCars Flowers102 Food101 FGVCAircraft SUN397 DTD EuroSAT UCF101 ImageNetV2 ImageNetSketch ImageNetA ImageNetR DomainNet.clipart OfficeHome.real PACS.art VLCS.caltech TerraInc.100; do
+    python better_augmentations_zero-shot.py --dataset $dataset --modelname ViT-L-14 --pretrained openai --d 768
+    python better_augmentations_zero-shot.py --dataset $dataset --modelname ViT-B-16 --pretrained openai --d 512
+done
+cp cache/better_descriptors_sorted_ViT-B-16_DomainNet.clipart.list cache/better_descriptors_sorted_ViT-B-16_DomainNet.list
+cp cache/better_descriptors_sorted_ViT-B-16_OfficeHome.real.list   cache/better_descriptors_sorted_ViT-B-16_16_OfficeHome.list
+cp cache/better_descriptors_sorted_ViT-B-16_PACS.art.list          cache/better_descriptors_sorted_ViT-B-16_PACS.list
+cp cache/better_descriptors_sorted_ViT-B-16_VLCS.caltech.list      cache/better_descriptors_sorted_ViT-B-16_VLCS.list
+cp cache/better_descriptors_sorted_ViT-B-16_TerraInc.100.list      cache/better_descriptors_sorted_ViT-B-16_TerraInc.list
+cp cache/better_descriptors_sorted_ViT-L-14_DomainNet.clipart.list cache/better_descriptors_sorted_ViT-L-14_DomainNet.list
+cp cache/better_descriptors_sorted_ViT-L-14_OfficeHome.real.list   cache/better_descriptors_sorted_ViT-L-14_OfficeHome.list
+cp cache/better_descriptors_sorted_ViT-L-14_PACS.art.list          cache/better_descriptors_sorted_ViT-L-14_PACS.list
+cp cache/better_descriptors_sorted_ViT-L-14_VLCS.caltech.list      cache/better_descriptors_sorted_ViT-L-14_VLCS.list
+cp cache/better_descriptors_sorted_ViT-L-14_TerraInc.100.list      cache/better_descriptors_sorted_ViT-L-14_TerraInc.list
+```
+
+The selected augmentations are stored in `cache/better_descriptors_sorted_*.list`.
+
+To train with the selected augmentations, run `run_b16_initreg_paired.sh` and `run_l14_initreg_paired.sh` using the same settings as above (`run_b16.sh` and `run_l14.sh`).
 
 
 
